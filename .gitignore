@@ -1,0 +1,12 @@
+# Ignore the huge AI models and temporary data
+stable-diffusion-webui/models/
+stable-diffusion-webui/outputs/
+stable-diffusion-webui/repositories/
+stable-diffusion-webui/venv/
+
+# Ignore Python/Node artifacts
+__pycache__/
+node_modules/
+.env
+*.ckpt
+*.safetensors
