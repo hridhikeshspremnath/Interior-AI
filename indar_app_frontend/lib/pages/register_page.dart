@@ -2,62 +2,81 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
-import 'register_page.dart'; // ← add your register page import here
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   bool _isLoading = false;
 
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final confirm = _confirmController.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    // Validation
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
       _showError('Please fill in all fields.');
+      return;
+    }
+
+    if (password != confirm) {
+      _showError('Passwords do not match.');
+      return;
+    }
+
+    if (password.length < 8) {
+      _showError('Password must be at least 8 characters.');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      await AuthService.login(email: email, password: password);
-      // StreamBuilder in main.dart handles navigation automatically
+      await AuthService.register(email: email, password: password);
+
+      // After register — update name in FastAPI
+      await AuthService.updateName(name);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created! Please check your email to confirm.'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        // Go back to login
+        Navigator.pop(context);
+      }
 
     } on AuthException catch (e) {
       debugPrint('AuthException: ${e.message}');
       _showError(e.message);
     } catch (e) {
-      debugPrint('Login error: $e');
+      debugPrint('Register error: $e');
       _showError('Something went wrong. Please try again.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
-    try {
-      await AuthService.signInWithGoogle();
-    } catch (e) {
-      debugPrint('Google sign in error: $e');
-      _showError('Google sign in failed. Please try again.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -87,8 +106,10 @@ class _LoginPageState extends State<LoginPage> {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            // Same background as login
             Image.asset('assets/images/room.jpg', fit: BoxFit.cover),
             Container(color: Colors.black.withOpacity(0.75)),
+
             SingleChildScrollView(
               padding: EdgeInsets.only(
                 left: 28,
@@ -122,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 48),
 
                   const Text(
-                    'Welcome.',
+                    'Create account.',
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.w300,
@@ -135,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 10),
 
                   const Text(
-                    'Sign in to continue.',
+                    'Sign up to get started.',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white38,
@@ -145,61 +166,51 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 48),
 
-                  // Email field
+                  // Name
+                  _buildTextField(
+                    hint: 'Full name',
+                    controller: _nameController,
+                    keyboardType: TextInputType.name,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Email
                   _buildTextField(
                     hint: 'Email address',
                     controller: _emailController,
-                    isPassword: false,
                     keyboardType: TextInputType.emailAddress,
                   ),
 
                   const SizedBox(height: 14),
 
-                  // Password field
-                  _buildPasswordField(),
+                  // Password
+                  _buildPasswordField(
+                    hint: 'Password',
+                    controller: _passwordController,
+                    obscure: _obscurePassword,
+                    onToggle: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
+                  ),
 
                   const SizedBox(height: 14),
 
-                  // Forgot password
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () async {
-                        final email = _emailController.text.trim();
-                        if (email.isEmpty) {
-                          _showError('Enter your email first.');
-                          return;
-                        }
-                        try {
-                          await AuthService.resetPassword(email);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Password reset email sent.'),
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          _showError('Failed to send reset email.');
-                        }
-                      },
-                      child: Text(
-                        'Forgot password?',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.45),
-                          fontSize: 13,
-                        ),
-                      ),
+                  // Confirm password
+                  _buildPasswordField(
+                    hint: 'Confirm password',
+                    controller: _confirmController,
+                    obscure: _obscureConfirm,
+                    onToggle: () => setState(
+                      () => _obscureConfirm = !_obscureConfirm,
                     ),
                   ),
 
                   const SizedBox(height: 36),
 
-                  // Login button
+                  // Register button
                   GestureDetector(
-                    onTap: _isLoading ? null : _handleLogin,
+                    onTap: _isLoading ? null : _handleRegister,
                     child: Container(
                       height: 56,
                       width: double.infinity,
@@ -214,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
                                 strokeWidth: 2,
                               )
                             : const Text(
-                                'Sign In',
+                                'Create Account',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -226,54 +237,11 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 28),
-
-                  // Divider
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(height: 0.5, color: Colors.white12),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 14),
-                        child: Text(
-                          'or continue with',
-                          style: TextStyle(color: Colors.white30, fontSize: 12),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(height: 0.5, color: Colors.white12),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Social buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: _isLoading ? null : _handleGoogleSignIn,
-                        child: _socialButton(Icons.g_mobiledata),
-                      ),
-                      const SizedBox(width: 14),
-                      _socialButton(Icons.apple),
-                      const SizedBox(width: 14),
-                      _socialButton(Icons.facebook),
-                    ],
-                  ),
-
                   const SizedBox(height: 40),
 
-                  // Register now — wired to RegisterPage
+                  // Already have account
                   GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RegisterPage(),
-                      ),
-                    ),
+                    onTap: () => Navigator.pop(context),
                     child: Center(
                       child: RichText(
                         text: TextSpan(
@@ -282,9 +250,9 @@ class _LoginPageState extends State<LoginPage> {
                             fontSize: 13,
                           ),
                           children: [
-                            const TextSpan(text: 'Not a member? '),
+                            const TextSpan(text: 'Already a member? '),
                             TextSpan(
-                              text: 'Register now',
+                              text: 'Sign in',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.85),
                                 fontWeight: FontWeight.w500,
@@ -307,7 +275,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildTextField({
     required String hint,
     required TextEditingController controller,
-    required bool isPassword,
     TextInputType? keyboardType,
   }) {
     return Container(
@@ -318,7 +285,6 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: TextField(
         controller: controller,
-        obscureText: isPassword,
         keyboardType: keyboardType,
         style: const TextStyle(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
@@ -334,7 +300,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildPasswordField() {
+  Widget _buildPasswordField({
+    required String hint,
+    required TextEditingController controller,
+    required bool obscure,
+    required VoidCallback onToggle,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.06),
@@ -342,11 +313,11 @@ class _LoginPageState extends State<LoginPage> {
         border: Border.all(color: Colors.white12),
       ),
       child: TextField(
-        controller: _passwordController,
-        obscureText: _obscurePassword,
+        controller: controller,
+        obscureText: obscure,
         style: const TextStyle(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
-          hintText: 'Password',
+          hintText: hint,
           hintStyle: const TextStyle(color: Colors.white30, fontSize: 15),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
@@ -354,10 +325,9 @@ class _LoginPageState extends State<LoginPage> {
             vertical: 18,
           ),
           suffixIcon: GestureDetector(
-            onTap: () =>
-                setState(() => _obscurePassword = !_obscurePassword),
+            onTap: onToggle,
             child: Icon(
-              _obscurePassword
+              obscure
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
               color: Colors.white30,
@@ -366,19 +336,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    );
-  }
-
-  static Widget _socialButton(IconData icon) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Icon(icon, color: Colors.white70, size: 26),
     );
   }
 }

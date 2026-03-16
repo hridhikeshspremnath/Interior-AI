@@ -9,7 +9,7 @@ class AppLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff3f3f3),
+      backgroundColor: const Color.fromARGB(255, 238, 238, 238),
       bottomNavigationBar: buildBottomNav(context),
       body: SafeArea(
         child: Padding(
