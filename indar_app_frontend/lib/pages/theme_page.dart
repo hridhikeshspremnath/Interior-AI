@@ -21,7 +21,8 @@ class _ThemePageState extends State<ThemePage> {
   bool _isGenerating = false;
   String _status = '';
 
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+// Update this line in ThemePage.dart
+static const String _baseUrl = 'http://192.168.1.103:8000';
 
   // Map theme title to API theme name
   String _apiThemeName(String title) {

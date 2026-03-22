@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/bottom_nav.dart';
 import 'cart_page.dart';
+import 'ar_view_page.dart';
 
 class EditElementsPage extends StatefulWidget {
   final List<dynamic> elements;
@@ -65,6 +66,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
               children: [
                 const SizedBox(height: 20),
 
+                // Header
                 Row(
                   children: [
                     GestureDetector(
@@ -99,6 +101,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
 
                 const SizedBox(height: 20),
 
+                // Design preview
                 const Text('Design Preview',
                     style: TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w500)),
@@ -128,6 +131,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
 
                 const SizedBox(height: 20),
 
+                // Elements list
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -145,7 +149,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'AR coming soon',
+                        'Tap AR to preview in your room',
                         style: TextStyle(
                             fontSize: 12,
                             color: Colors.black.withOpacity(0.4)),
@@ -161,6 +165,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
 
                 const SizedBox(height: 20),
 
+                // Matched products
                 if (items.isNotEmpty) ...[
                   const Text('Matched Products',
                       style: TextStyle(
@@ -240,22 +245,21 @@ class _EditElementsPageState extends State<EditElementsPage> {
                                       ),
                                       const SizedBox(width: 8),
                                       Container(
-                                        padding: const EdgeInsets
-                                            .symmetric(
+                                        padding:
+                                            const EdgeInsets.symmetric(
                                                 horizontal: 6,
                                                 vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Colors.black
                                               .withOpacity(0.06),
                                           borderRadius:
-                                              BorderRadius.circular(
-                                                  4),
+                                              BorderRadius.circular(4),
                                         ),
                                         child: Text(category,
                                             style: const TextStyle(
                                                 fontSize: 10,
-                                                color: Color(
-                                                    0xFF555555))),
+                                                color:
+                                                    Color(0xFF555555))),
                                       ),
                                     ],
                                   ),
@@ -273,6 +277,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
 
                 const SizedBox(height: 20),
 
+                // Buttons
                 Row(
                   children: [
                     Expanded(
@@ -356,6 +361,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
         ? (items[index]['product'] as Map<String, dynamic>?) ?? {}
         : <String, dynamic>{};
     final productImageUrl = matchedProduct['image_url'];
+    final assetName = matchedProduct['asset_3d_name'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -367,6 +373,7 @@ class _EditElementsPageState extends State<EditElementsPage> {
       ),
       child: Row(
         children: [
+          // Product image or icon
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: productImageUrl != null &&
@@ -378,6 +385,8 @@ class _EditElementsPageState extends State<EditElementsPage> {
                 : _categoryIcon(category),
           ),
           const SizedBox(width: 12),
+
+          // Name + placement
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,26 +418,54 @@ class _EditElementsPageState extends State<EditElementsPage> {
               ],
             ),
           ),
-          // AR placeholder button
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.view_in_ar,
-                    color: Colors.white, size: 18),
-                SizedBox(height: 2),
-                Text('AR Soon',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w500)),
-              ],
+
+          const SizedBox(width: 8),
+
+          // ── AR button ────────────────────────────────────────
+          GestureDetector(
+            onTap: () {
+              final asset = assetName?.toString() ?? '';
+              if (asset.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'No 3D model available for this item.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ARViewPage(
+                    assetName: asset,
+                    elementName: name,
+                    category: category,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.view_in_ar,
+                      color: Colors.white, size: 18),
+                  SizedBox(height: 2),
+                  Text('AR',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
             ),
           ),
         ],

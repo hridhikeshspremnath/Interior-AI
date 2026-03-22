@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ApiService {
   // Android emulator uses 10.0.2.2 to reach your machine's localhost
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const String baseUrl = 'http://192.168.1.103:8000';
 
   static String? get _token =>
       Supabase.instance.client.auth.currentSession?.accessToken;

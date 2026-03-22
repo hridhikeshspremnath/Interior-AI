@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class AIService {
 
-  static const String backendUrl = "http://localhost:8000/generate";
+  static const String backendUrl = 'http://192.168.1.103:8000/generate';
 
   static Future<String?> generateImage({
     required String prompt,

@@ -48,42 +48,36 @@ class _AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<_AuthGate> {
-  // null = still loading, true = logged in, false = logged out
   bool? _isLoggedIn;
 
   @override
-  void initState() {
-    super.initState();
-    _checkSession();
+void initState() {
+  super.initState();
+  
+  // 1. Check initial session immediately
+  final initialSession = supabase.auth.currentSession;
+  _isLoggedIn = initialSession != null;
 
-    // Listen for auth changes after initial check
-    supabase.auth.onAuthStateChange.listen((data) {
-      if (!mounted) return;
-      final event = data.event;
-      final session = data.session;
-
-      if (event == AuthChangeEvent.signedIn && session != null) {
-        AuthService.syncWithBackend();
-        setState(() => _isLoggedIn = true);
-      } else if (event == AuthChangeEvent.signedOut) {
-        setState(() => _isLoggedIn = false);
-      }
-    });
-  }
-
-  Future<void> _checkSession() async {
-    // Small delay to let Supabase restore session from storage
-    await Future.delayed(const Duration(milliseconds: 300));
-    
+  // 2. Listen for any subsequent changes
+  supabase.auth.onAuthStateChange.listen((data) {
     if (!mounted) return;
     
-    final session = supabase.auth.currentSession;
-    setState(() => _isLoggedIn = session != null);
-  }
+    final Session? session = data.session;
+    
+    setState(() {
+      // If session is NOT null, user is logged in.
+      _isLoggedIn = session != null;
+    });
+
+    if (data.event == AuthChangeEvent.signedIn) {
+      AuthService.syncWithBackend();
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
-    // Still checking session — show splash
+    // Still waiting for initial session check
     if (_isLoggedIn == null) {
       return const Scaffold(
         backgroundColor: Colors.black,
