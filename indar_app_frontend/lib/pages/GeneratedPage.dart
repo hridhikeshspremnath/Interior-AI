@@ -6,6 +6,14 @@ import 'package:http/http.dart' as http;
 import '../widgets/bottom_nav.dart';
 import 'cart_page.dart';
 import 'edit_elements_page.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:gal/gal.dart'; // Modern library for gallery saving
+import 'package:pdf/widgets.dart' as pw;
+import 'dart:typed_data';
+
+
 
 class GeneratedPage extends StatefulWidget {
   final Map<String, dynamic> design;
@@ -34,7 +42,61 @@ class _GeneratedPageState extends State<GeneratedPage> {
     _elements = widget.design['elements'] as List? ?? [];
     _items = widget.bundle?['items'] as List? ?? [];
   }
+  Future<void> _handleDownload() async {
+  final imageUrl = widget.design['design_image_url'];
+  if (imageUrl == null) {
+    _showSnack('No image available to download.');
+    return;
+  }
 
+  setState(() => _purchasing = true);
+
+  try {
+    // 1. Download the image bytes using Dio
+    final response = await Dio().get(
+      imageUrl,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final Uint8List bytes = Uint8List.fromList(response.data);
+
+    // 2. Choose format (Showing JPEG logic here, see PDF logic below)
+    await _saveAsJpeg(bytes);
+    
+    _showSnack('Image saved to gallery!');
+  } catch (e) {
+    _showSnack('Download failed: $e');
+  } finally {
+    if (mounted) setState(() => _purchasing = false);
+  }
+}
+
+Future<void> _saveAsJpeg(Uint8List bytes) async {
+  // Get temporary directory to store the file before moving to gallery
+  final tempDir = await getTemporaryDirectory();
+  final file = File('${tempDir.path}/design_${DateTime.now().millisecondsSinceEpoch}.jpg');
+  await file.writeAsBytes(bytes);
+
+  // Save to Gallery
+  await Gal.putImage(file.path);
+}
+
+Future<void> _saveAsPdf(Uint8List bytes) async {
+  final pdf = pw.Document();
+  final image = pw.MemoryImage(bytes);
+
+  pdf.addPage(
+    pw.Page(
+      build: (pw.Context context) => pw.Center(
+        child: pw.Image(image),
+      ),
+    ),
+  );
+
+  final output = await getApplicationDocumentsDirectory();
+  final file = File("${output.path}/design_export.pdf");
+  await file.writeAsBytes(await pdf.save());
+  _showSnack('PDF saved to Documents');
+}
   Future<void> _openAmazonCart() async {
     final cartUrl = widget.bundle?['amazon_cart_url'];
     if (cartUrl == null) {
@@ -361,7 +423,7 @@ class _GeneratedPageState extends State<GeneratedPage> {
                                           color: Colors.white,
                                           size: 18),
                                       SizedBox(width: 8),
-                                      Text('Buy on Amazon',
+                                      Text('Download',
                                           style: TextStyle(
                                               color: Colors.white,
                                               fontWeight:

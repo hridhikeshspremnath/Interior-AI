@@ -40,6 +40,10 @@ dependencies:
   google_fonts: ^6.3.3
   model_viewer_plus: ^1.7.2
   webview_flutter: ^4.7.0
+  dio: ^5.4.1
+  path_provider: ^2.1.2
+  gal: ^2.0.0
+  pdf: ^3.10.7
   # removed: ar_flutter_plugin, dio, permission_handler
 
   # The following adds the Cupertino Icons font to your application.

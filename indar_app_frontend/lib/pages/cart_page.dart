@@ -8,21 +8,33 @@ class CartPage extends StatelessWidget {
   const CartPage({super.key, this.bundle});
 
   Future<void> _openAmazon(BuildContext context) async {
-    final cartUrl = bundle?['amazon_cart_url'];
-    if (cartUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No cart available. Generate a design first.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-    final uri = Uri.parse(cartUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+  final cartUrl = bundle?['amazon_cart_url'];
+  if (cartUrl == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No cart available. Generate a design first.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
   }
+
+  final uri = Uri.parse(cartUrl);
+
+  try {
+    await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open Amazon'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
